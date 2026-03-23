@@ -6,4 +6,6 @@ export const appAPIParameterTest = path.resolve(__dirname, './api-parameter-test
 
 export const appCausingNestedRequests = path.resolve(__dirname, './nested-requests_0.0.1.zip');
 
+export const appUiKitRoomTest = path.resolve(__dirname, './uikit-room-test_0.0.1.zip');
+
 export const appUpdateStatusTest = path.resolve(__dirname, './update-status-test_0.0.1.zip');

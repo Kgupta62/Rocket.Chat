@@ -2,7 +2,6 @@ import type { IMediaCall, IUser } from '@rocket.chat/core-typings';
 import { Emitter } from '@rocket.chat/emitter';
 import { isPendingState } from '@rocket.chat/media-signaling';
 import type {
-	CallFeature,
 	ClientMediaSignal,
 	ClientMediaSignalRegister,
 	ClientMediaSignalRequestCall,
@@ -16,7 +15,9 @@ import type { InternalCallParams, SignalProcessingOptions } from '../definition/
 import { logger } from '../logger';
 import { mediaCallDirector } from '../server/CallDirector';
 import { UserActorAgent } from './agents/UserActorAgent';
-import { buildNewCallSignal } from '../server/buildNewCallSignal';
+import { getCallRoleForUser } from '../server/getCallRoleForUser';
+import { getNewCallSignal } from '../server/signals/getNewCallSignal';
+import { getSignalsForExistingCall } from '../server/signals/getSignalsForExistingCall';
 import { stripSensitiveDataFromSignal } from '../server/stripSensitiveData';
 
 export type SignalProcessorEvents = {
@@ -138,16 +139,11 @@ export class GlobalSignalProcessor {
 			return;
 		}
 
-		const isCaller = call.caller.type === 'user' && call.caller.id === uid;
-		const isCallee = call.callee.type === 'user' && call.callee.id === uid;
-
-		if (!isCaller && !isCallee) {
+		const role = getCallRoleForUser(call, uid);
+		if (!role) {
 			return;
 		}
-
-		const role = isCaller ? 'caller' : 'callee';
 		const actor = call[role];
-
 		// If this user's side of the call has already been signed
 		if (actor.contractId) {
 			// If it was signed by a session that the current session is replacing (as in a browser refresh)
@@ -170,20 +166,20 @@ export class GlobalSignalProcessor {
 				msg: 'Actor agent is not prepared to process signals',
 				method: 'reactToUnknownCall',
 				signal: stripSensitiveDataFromSignal(signal),
-				isCaller,
-				isCallee,
+				role,
 			});
 			throw new Error('internal-error');
 		}
 
-		agent.disablePushNotifications();
+		const needsSignals = signal.requestSignals ?? true;
+		if (!needsSignals) {
+			return;
+		}
 
-		await agent.onCallCreated(call);
+		const signals = await getSignalsForExistingCall(call, uid, signal.contractId);
 
-		if (call.state === 'active') {
-			await agent.onCallActive(call._id, actor.contractId ? { signedContractId: actor.contractId } : undefined);
-		} else if (actor.contractId && !isPendingState(call.state)) {
-			await agent.onCallAccepted(call._id, { signedContractId: actor.contractId, features: call.features as CallFeature[] });
+		for (const signal of signals) {
+			this.sendSignal(uid, signal);
 		}
 	}
 
@@ -262,7 +258,7 @@ export class GlobalSignalProcessor {
 			this.rejectCallRequest(uid, { ...rejection, reason: 'already-requested' });
 		}
 
-		this.sendSignal(uid, buildNewCallSignal(call, 'caller'));
+		this.sendSignal(uid, getNewCallSignal(call, 'caller'));
 
 		return call;
 	}

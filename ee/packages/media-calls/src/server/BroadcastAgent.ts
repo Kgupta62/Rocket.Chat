@@ -22,8 +22,8 @@ export class BroadcastActorAgent extends BaseMediaCallAgent {
 		this.reportCallUpdated({ callId });
 	}
 
-	public async onCallActive(callId: string): Promise<void> {
-		this.reportCallUpdated({ callId });
+	public async onCallActive(call: IMediaCall): Promise<void> {
+		this.reportCallUpdated({ callId: call._id });
 	}
 
 	public async onCallCreated(call: IMediaCall): Promise<void> {

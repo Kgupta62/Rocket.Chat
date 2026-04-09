@@ -55,7 +55,7 @@ class MediaCallDirector {
 
 		logger.info({ msg: 'Call was flagged as active', callId: call._id });
 		this.scheduleExpirationCheckByCallId(call._id);
-		return actorAgent.oppositeAgent?.onCallActive(call._id);
+		return actorAgent.oppositeAgent?.onCallActive(call);
 	}
 
 	public async acceptCall(

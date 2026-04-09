@@ -64,12 +64,14 @@ export class UserActorAgent extends BaseMediaCallAgent {
 		});
 	}
 
-	public async onCallActive(callId: string, data: { signedContractId?: string } = {}): Promise<void> {
+	public async onCallActive(call: IMediaCall): Promise<void> {
+		const actor = this.getMyCallActor(call);
+
 		return this.sendSignal({
-			callId,
+			callId: call._id,
 			type: 'notification',
 			notification: 'active',
-			...(data.signedContractId && { signedContractId: data.signedContractId }),
+			...(actor.contractId && { signedContractId: actor.contractId }),
 		});
 	}
 

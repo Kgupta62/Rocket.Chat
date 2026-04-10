@@ -3,7 +3,6 @@ import { Emitter } from '@rocket.chat/emitter';
 import { differenceInMilliseconds } from 'date-fns';
 import { ReactiveVar } from 'meteor/reactive-var';
 import { Tracker } from 'meteor/tracker';
-import type { MutableRefObject } from 'react';
 
 import { onClientMessageReceived } from '../../../../client/lib/onClientMessageReceived';
 import { getUserId } from '../../../../client/lib/user';
@@ -216,14 +215,13 @@ class RoomHistoryManagerClass extends Emitter {
 		room.scroll = undefined;
 	}
 
-	public async getMoreNext(rid: IRoom['_id'], atBottomRef: MutableRefObject<boolean>) {
+	public async getMoreNext(rid: IRoom['_id']) {
 		const room = this.getRoom(rid);
 		if (Tracker.nonreactive(() => room.hasMoreNext.get()) !== true) {
 			return;
 		}
 
 		await this.queue();
-		atBottomRef.current = false;
 
 		room.isLoading.set(true);
 
